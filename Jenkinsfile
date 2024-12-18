@@ -2,28 +2,44 @@ pipeline {
     agent any
  
     stages {
-        stage('with Docker') {
+        stage('Build') {
             agent{
                 docker{
                     image 'node:18-alpine'
+                    reuseNode true
                 }
             }
             steps {
                 sh '''
-                    echo "with docker"
+                    ls -la
+                    node --version
                     npm --version
-                    touch "with-container.txt"
+                    npm ci
+                    npm run build
+                    ls -la
                 '''
             }
         }
-        stage('without Docker') {
+
+        stage('Test') {
+            agent{
+                docker{
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
             steps {
                 sh '''
-                    echo "without docker"
-                    touch "without-container.txt"
+                    test -f build/index.html
+                    npm test
                 '''
             }
         }
-       
+    }
+
+    post {
+        always {
+            junit 'test-results/junit.xml'
+        }
     }
 }
